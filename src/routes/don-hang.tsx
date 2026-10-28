@@ -111,12 +111,12 @@ function OrdersPage() {
     <>
       <PageTitle title="Đơn hàng" action={<button className="btn btn-primary" onClick={() => setEditing(blank())}><Plus className="h-4 w-4" />Tạo đơn</button>} />
       
-      {/* Quick Status Filter Pills (Clean default styling) */}
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
+      {/* Quick Status Filter Pills (Scroll ngang tren mobile, khong wrap) */}
+      <div className="mb-4 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
         <button
           type="button"
           onClick={() => setStatus("ALL")}
-          className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold transition-all ${
+          className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
             status === "ALL"
               ? "btn-primary shadow-sm"
               : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
@@ -133,7 +133,7 @@ function OrdersPage() {
               key={st}
               type="button"
               onClick={() => setStatus(st)}
-              className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold transition-all ${
+              className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
                 isSelected
                   ? "btn-primary shadow-sm"
                   : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
@@ -146,15 +146,11 @@ function OrdersPage() {
       </div>
 
       <div className="card-soft mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4">
-        <div className="grid flex-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid flex-1 gap-2.5 sm:grid-cols-3">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <input className="field pl-9" placeholder="Tên hoặc SĐT khách, người nhận..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <select className="field" value={status} onChange={(e) => setStatus(e.target.value as OrderStatus | "ALL")}>
-            <option value="ALL">Tất cả trạng thái</option>
-            {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
           <input type="date" className="field" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Từ ngày" />
           <input type="date" className="field" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Đến ngày" />
         </div>
@@ -780,7 +776,7 @@ function OrderForm({ initial, onClose }: { initial: Order; onClose: () => void }
         {/* Order Products & Inventory Deduction */}
         <div className="rounded-2xl bg-muted p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-foreground">Sản phẩm & Nguyên liệu hoa</p>
+            <p className="text-sm font-semibold text-foreground">Sản phẩm</p>
             <span className="text-[11px] text-primary font-medium bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
               ⚡ Tự động trừ kho khi lưu đơn
             </span>
@@ -837,7 +833,7 @@ function OrderForm({ initial, onClose }: { initial: Order; onClose: () => void }
           })}
 
           <select className="field text-sm" value="" onChange={(e) => addItem(e.target.value)}>
-            <option value="">+ Thêm hoa hồng hoặc sản phẩm từ kho…</option>
+            <option value="">+ Thêm sản phẩm từ kho…</option>
             {inventory.map((i) => (
               <option key={i.id} value={i.id}>
                 {i.name} (Tồn kho: {i.quantity} {i.unit}) — Giá bán: {vnd(i.sellingPrice)}
@@ -867,7 +863,7 @@ function OrderForm({ initial, onClose }: { initial: Order; onClose: () => void }
         </div>
         <div className="flex items-center justify-between border-t border-border pt-4">
           <p className="font-display text-xl font-bold">Tổng: {vnd(orderTotal(o))}</p>
-          <button className="btn btn-primary">Lưu đơn & Cập nhật kho</button>
+          <button className="btn btn-primary">Lưu đơn</button>
         </div>
       </form>
     </Modal>

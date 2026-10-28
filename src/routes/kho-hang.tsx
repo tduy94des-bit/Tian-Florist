@@ -68,51 +68,49 @@ function InventoryPage() {
           <Plus className="h-4 w-4" />Thêm mặt hàng
         </button>} />
 
-      {/* Quick Alerts Banner / Filters */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(["ALL", ...INV_CATS] as const).map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold transition-all ${
-                cat === c
-                  ? "btn-primary shadow-sm"
-                  : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
-              }`}
-            >
-              {c === "ALL" ? "Tất cả danh mục" : c}
-            </button>
-          ))}
-        </div>
-
-        {/* Status Quick Filters (Clean default styling) */}
-        <div className="flex items-center gap-1.5 text-xs">
+      {/* 1. Category Tabs (Cuộn ngang độc lập) */}
+      <div className="mb-2 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+        {(["ALL", ...INV_CATS] as const).map((c) => (
           <button
-            type="button"
-            onClick={() => setStockFilter(stockFilter === "LOW_ONLY" ? "ALL" : "LOW_ONLY")}
-            className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold transition-all ${
-              stockFilter === "LOW_ONLY"
+            key={c}
+            onClick={() => setCat(c)}
+            className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
+              cat === c
                 ? "btn-primary shadow-sm"
                 : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
             }`}
           >
-            Sắp hết ({lowCount})
+            {c === "ALL" ? "Tất cả danh mục" : c}
           </button>
-          {expiringCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setStockFilter(stockFilter === "EXPIRING_ONLY" ? "ALL" : "EXPIRING_ONLY")}
-              className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold transition-all ${
-                stockFilter === "EXPIRING_ONLY"
-                  ? "btn-primary shadow-sm"
-                  : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
-              }`}
-            >
-              Cần dùng ngay ({expiringCount})
-            </button>
-          )}
-        </div>
+        ))}
+      </div>
+
+      {/* 2. Stock Alert Filters (Tách riêng biệt) */}
+      <div className="mb-4 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+        <button
+          type="button"
+          onClick={() => setStockFilter(stockFilter === "LOW_ONLY" ? "ALL" : "LOW_ONLY")}
+          className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
+            stockFilter === "LOW_ONLY"
+              ? "btn-primary shadow-sm"
+              : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
+          }`}
+        >
+          Sắp hết ({lowCount})
+        </button>
+        {expiringCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setStockFilter(stockFilter === "EXPIRING_ONLY" ? "ALL" : "EXPIRING_ONLY")}
+            className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
+              stockFilter === "EXPIRING_ONLY"
+                ? "btn-primary shadow-sm"
+                : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
+            }`}
+          >
+            Cần dùng ngay ({expiringCount})
+          </button>
+        )}
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

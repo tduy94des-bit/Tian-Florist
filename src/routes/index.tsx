@@ -156,43 +156,43 @@ function Dashboard() {
           </p>
         </div>
 
-        {/* View Mode Pills */}
-        <div className="inline-flex self-start sm:self-auto rounded-full bg-white p-1 border border-border shadow-2xs">
+        {/* View Mode Pills (Full width tren mobile) */}
+        <div className="flex w-full sm:w-auto sm:inline-flex rounded-full bg-white p-1 border border-border shadow-2xs">
           <button
             type="button"
             onClick={() => setViewMode("COMPARE_MONTHS")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
               viewMode === "COMPARE_MONTHS"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
-            So sánh giữa các tháng
+            <ArrowRightLeft className="h-3.5 w-3.5 shrink-0" />
+            <span>So sánh</span>
           </button>
           <button
             type="button"
             onClick={() => setViewMode("SINGLE_MONTH")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
               viewMode === "SINGLE_MONTH"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Calendar className="h-3.5 w-3.5" />
-            Theo từng tháng
+            <Calendar className="h-3.5 w-3.5 shrink-0" />
+            <span>Tháng</span>
           </button>
           <button
             type="button"
             onClick={() => setViewMode("ALL")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
               viewMode === "ALL"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Layers className="h-3.5 w-3.5" />
-            Toàn thời gian
+            <Layers className="h-3.5 w-3.5 shrink-0" />
+            <span>Tất cả</span>
           </button>
         </div>
       </div>
@@ -200,79 +200,36 @@ function Dashboard() {
       {/* FILTER CONTROLS BAR */}
       <div className="card-soft p-4 md:p-5 bg-card">
         {viewMode === "COMPARE_MONTHS" && (
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Kỳ so sánh:
-              </span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Month A Selector */}
+            <select
+              value={monthA}
+              onChange={(e) => setMonthA(e.target.value)}
+              className="field py-1.5 px-3 text-sm font-medium flex-1 sm:flex-none sm:w-auto border-primary/40 focus:border-primary"
+            >
+              {availableMonths.map((ym) => (
+                <option key={ym} value={ym}>
+                  {formatMonthLabel(ym)}
+                </option>
+              ))}
+            </select>
 
-              {/* Month A Selector */}
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
-                  Tháng A
-                </span>
-                <select
-                  value={monthA}
-                  onChange={(e) => setMonthA(e.target.value)}
-                  className="field py-1.5 px-3 text-sm font-medium w-auto border-primary/40 focus:border-primary"
-                >
-                  {availableMonths.map((ym) => (
-                    <option key={ym} value={ym}>
-                      {formatMonthLabel(ym)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="text-muted-foreground flex items-center justify-center">
-                <ArrowRightLeft className="h-4 w-4 text-primary" />
-              </div>
-
-              {/* Month B Selector */}
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center rounded-md bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground">
-                  Tháng B (Đối chứng)
-                </span>
-                <select
-                  value={monthB}
-                  onChange={(e) => setMonthB(e.target.value)}
-                  className="field py-1.5 px-3 text-sm font-medium w-auto"
-                >
-                  {availableMonths.map((ym) => (
-                    <option key={ym} value={ym}>
-                      {formatMonthLabel(ym)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="text-muted-foreground flex items-center justify-center shrink-0">
+              <ArrowRightLeft className="h-4 w-4 text-primary" />
             </div>
 
-            {/* Quick shortcuts */}
-            <div className="flex items-center gap-2 pt-2 border-t border-border lg:border-t-0 lg:pt-0">
-              <span className="text-xs text-muted-foreground">Chọn nhanh:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setMonthA(availableMonths[0] || defaultMonthA);
-                  setMonthB(availableMonths[1] || availableMonths[0] || defaultMonthA);
-                }}
-                className="btn btn-ghost h-8 min-h-0 px-2.5 text-xs"
-              >
-                Tháng này vs Tháng trước
-              </button>
-              {availableMonths.length > 2 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMonthA(availableMonths[0] || defaultMonthA);
-                    setMonthB(availableMonths[2] || defaultMonthA);
-                  }}
-                  className="btn btn-ghost h-8 min-h-0 px-2.5 text-xs hidden sm:inline-flex"
-                >
-                  Cách 2 tháng
-                </button>
-              )}
-            </div>
+            {/* Month B Selector */}
+            <select
+              value={monthB}
+              onChange={(e) => setMonthB(e.target.value)}
+              className="field py-1.5 px-3 text-sm font-medium flex-1 sm:flex-none sm:w-auto"
+            >
+              {availableMonths.map((ym) => (
+                <option key={ym} value={ym}>
+                  {formatMonthLabel(ym)}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
