@@ -1,0 +1,170 @@
+@import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "SF Pro", "Segoe UI", Roboto, sans-serif;
+  --font-sans: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "SF Pro", "Segoe UI", Roboto, sans-serif;
+  --shadow-soft: var(--shadow-soft);
+  --shadow-card: var(--shadow-card);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 1rem;
+  --background: #F5F5F5;
+  --foreground: #2B2D2A;
+  --card: #FFFFFF;
+  --card-foreground: #2B2D2A;
+  --popover: #FFFFFF;
+  --popover-foreground: #2B2D2A;
+  --primary: #6B755F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F3EC;
+  --secondary-foreground: #48533F;
+  --muted: #F3F2EF;
+  --muted-foreground: #7A7B76;
+  --accent: #E8EBE3;
+  --accent-foreground: #3B4433;
+  --destructive: #D4524D;
+  --destructive-foreground: #FFFFFF;
+  --success: #3D8543;
+  --warning: #B45309;
+  --warning-soft: #FEF3C7;
+  --highlight: #FEF3C7;
+  --highlight-foreground: #92400E;
+  --border: #E8E8E4;
+  --input: #E5E5E1;
+  --ring: #6B755F;
+  --chart-1: #6B755F;
+  --chart-2: #8E9C7E;
+  --chart-3: #B2C0A5;
+  --chart-4: #545E49;
+  --chart-5: #C8D4BF;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #2B2D2A;
+  --sidebar-primary: #6B755F;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E8EBE3;
+  --sidebar-accent-foreground: #3B4433;
+  --sidebar-border: #EAEAE6;
+  --sidebar-ring: #6B755F;
+  --gradient-bloom: linear-gradient(135deg, #E7ECDF 0%, #F5F4F1 100%);
+  --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.08), 0 1px 3px -1px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 4px -1px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+@utility bg-bloom { background-image: var(--gradient-bloom); }
+@utility card-soft { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-card); transition: box-shadow 0.2s ease; &:hover { box-shadow: var(--shadow-soft); } }
+@utility field { width: 100%; border: 1px solid var(--input); border-radius: calc(var(--radius) - 6px); background: var(--card); padding: 0.6rem 0.8rem; font-size: 0.95rem; outline: none; transition: border-color 0.15s ease; &:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(107, 117, 95, 0.08); } }
+@utility btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border-radius: 999px; padding: 0.6rem 1.1rem; font-weight: 600; font-size: 0.9rem; min-height: 2.6rem; transition: all .18s ease; &:hover { opacity: .88; } }
+@utility btn-primary { background: var(--primary); color: var(--primary-foreground); &:hover { opacity: 1; background: color-mix(in srgb, var(--primary) 88%, black); } }
+@utility btn-ghost { background: transparent; color: var(--foreground); &:hover { background: var(--muted); } }
+@utility card-highlight { background: var(--highlight); border: 1px solid color-mix(in srgb, var(--highlight) 80%, #c89f3f); border-radius: var(--radius); }
+@media print { .no-print { display: none !important; } }
