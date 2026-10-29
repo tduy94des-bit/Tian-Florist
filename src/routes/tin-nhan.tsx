@@ -18,6 +18,10 @@ import {
   Bot,
   AlertCircle,
   FileText,
+  Settings2,
+  Share2,
+  Check,
+  AlertTriangle,
 } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { PageTitle, Modal } from "@/components/AppShell";
@@ -31,6 +35,17 @@ import {
   type ChatMessage,
 } from "@/lib/chatStore";
 import { extractOrderWithGemini, type ExtractedOrderData } from "@/lib/gemini";
+import {
+  getSocialConfig,
+  saveSocialConfig,
+  verifyFacebookToken,
+  fetchFacebookConversations,
+  sendFacebookMessage,
+  verifyZaloToken,
+  fetchZaloConversations,
+  sendZaloMessage,
+  type SocialConfig,
+} from "@/lib/socialApis";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tin-nhan")({
@@ -56,6 +71,20 @@ function SocialChatPage() {
   const [filterChannel, setFilterChannel] = useState<SocialChannel | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [inputText, setInputText] = useState("");
+
+  // Social Config State
+  const [socialConfig, setSocialConfig] = useState<SocialConfig>(() => getSocialConfig());
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Config Form
+  const [activeTab, setActiveTab] = useState<SocialChannel>("facebook");
+  const [fbToken, setFbToken] = useState(socialConfig.facebook.pageAccessToken);
+  const [fbPageName, setFbPageName] = useState(socialConfig.facebook.pageName || "");
+  const [zaloToken, setZaloToken] = useState(socialConfig.zalo.oaAccessToken);
+  const [zaloOaId, setZaloOaId] = useState(socialConfig.zalo.oaId);
+  const [tiktokToken, setTiktokToken] = useState(socialConfig.tiktok.accessToken);
+  const [verifying, setVerifying] = useState(false);
 
   // AI Extraction State
   const [isExtracting, setIsExtracting] = useState(false);
@@ -93,16 +122,141 @@ function SocialChatPage() {
     return true;
   });
 
-  // Gửi tin nhắn mới
-  const handleSendMessage = () => {
+  // Đồng bộ tin nhắn thật từ các kênh đã kết nối
+  const handleSyncRealData = async () => {
+    const hasAny = socialConfig.facebook.enabled || socialConfig.zalo.enabled;
+    if (!hasAny) {
+      toast.info("Chưa có kênh nào được kích hoạt kết nối. Đang mở cài đặt kết nối kênh...");
+      setIsConfigModalOpen(true);
+      return;
+    }
+
+    setIsSyncing(true);
+    toast.info("Đang đồng bộ hội thoại từ các kênh kết nối thật...");
+
+    try {
+      let realConvs: Conversation[] = [];
+
+      // 1. Kéo tin nhắn Facebook thật
+      if (socialConfig.facebook.enabled && socialConfig.facebook.pageAccessToken) {
+        const fbConvs = await fetchFacebookConversations(socialConfig.facebook.pageAccessToken);
+        if (fbConvs.length > 0) {
+          realConvs = [...realConvs, ...fbConvs];
+          toast.success(`Đã lấy ${fbConvs.length} hội thoại thật từ Fanpage Facebook!`);
+        }
+      }
+
+      // 2. Kéo tin nhắn Zalo thật
+      if (socialConfig.zalo.enabled && socialConfig.zalo.oaAccessToken) {
+        const zaloConvs = await fetchZaloConversations(socialConfig.zalo.oaAccessToken);
+        if (zaloConvs.length > 0) {
+          realConvs = [...realConvs, ...zaloConvs];
+          toast.success(`Đã lấy ${zaloConvs.length} hội thoại thật từ Zalo OA!`);
+        }
+      }
+
+      if (realConvs.length > 0) {
+        const existingIds = new Set(realConvs.map((c) => c.id));
+        const merged = [...realConvs, ...conversations.filter((c) => !existingIds.has(c.id))];
+        setConversations(merged);
+        setSelectedId(realConvs[0].id);
+      } else {
+        toast.info("Đã kiểm tra: Chưa có tin nhắn mới hoặc token cần được cấp lại.");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi đồng bộ: " + (err?.message || "Không thể đồng bộ"));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Xác thực và lưu cấu hình kênh Facebook
+  const handleSaveFacebook = async () => {
+    if (!fbToken.trim()) {
+      toast.error("Vui lòng nhập Page Access Token.");
+      return;
+    }
+    setVerifying(true);
+    const res = await verifyFacebookToken(fbToken);
+    setVerifying(false);
+
+    if (res.success) {
+      const updated: SocialConfig = {
+        ...socialConfig,
+        facebook: {
+          enabled: true,
+          pageAccessToken: fbToken.trim(),
+          pageId: res.id || "",
+          pageName: res.name || "Fanpage Tiệm Hoa",
+        },
+      };
+      setSocialConfig(updated);
+      saveSocialConfig(updated);
+      setFbPageName(res.name || "");
+      toast.success(`Kết nối Fanpage "${res.name}" thành công! 🎉`);
+    } else {
+      toast.error(`Xác thực thất bại: ${res.error}`);
+    }
+  };
+
+  // Xác thực và lưu cấu hình Zalo
+  const handleSaveZalo = async () => {
+    if (!zaloToken.trim()) {
+      toast.error("Vui lòng nhập Zalo OA Access Token.");
+      return;
+    }
+    setVerifying(true);
+    const res = await verifyZaloToken(zaloToken);
+    setVerifying(false);
+
+    if (res.success) {
+      const updated: SocialConfig = {
+        ...socialConfig,
+        zalo: {
+          enabled: true,
+          oaAccessToken: zaloToken.trim(),
+          oaId: res.id || zaloOaId.trim(),
+          oaName: res.name || "Zalo Tiệm Hoa",
+        },
+      };
+      setSocialConfig(updated);
+      saveSocialConfig(updated);
+      toast.success(`Kết nối Zalo OA "${res.name || 'Tiệm Hoa'}" thành công! 🎉`);
+    } else {
+      toast.error(`Xác thực Zalo thất bại: ${res.error}`);
+    }
+  };
+
+  // Lưu cấu hình TikTok
+  const handleSaveTikTok = () => {
+    if (!tiktokToken.trim()) {
+      toast.error("Vui lòng nhập TikTok Access Token.");
+      return;
+    }
+    const updated: SocialConfig = {
+      ...socialConfig,
+      tiktok: {
+        enabled: true,
+        accessToken: tiktokToken.trim(),
+        shopId: "shop_tian_florist",
+      },
+    };
+    setSocialConfig(updated);
+    saveSocialConfig(updated);
+    toast.success("Đã lưu cấu hình TikTok Shop thành công!");
+  };
+
+  // Gửi tin nhắn mới (hỗ trợ gửi thật qua Meta/Zalo nếu có token)
+  const handleSendMessage = async () => {
     if (!inputText.trim() || !selectedConv) return;
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const textToSend = inputText.trim();
 
     const newMsg: ChatMessage = {
       id: `m_${Date.now()}`,
       sender: "shop",
-      text: inputText.trim(),
+      text: textToSend,
       time: timeStr,
     };
 
@@ -111,7 +265,7 @@ function SocialChatPage() {
         if (c.id === selectedConv.id) {
           return {
             ...c,
-            lastMessage: `Bạn: ${inputText.trim()}`,
+            lastMessage: `Bạn: ${textToSend}`,
             updatedAt: "Vừa xong",
             messages: [...c.messages, newMsg],
           };
@@ -120,6 +274,34 @@ function SocialChatPage() {
       })
     );
     setInputText("");
+
+    // Nếu là hội thoại thật trên Facebook
+    if (selectedConv.channel === "facebook" && socialConfig.facebook.enabled && selectedConv.id.startsWith("FB-")) {
+      const sendRes = await sendFacebookMessage(
+        socialConfig.facebook.pageAccessToken,
+        selectedConv.customerHandle,
+        textToSend
+      );
+      if (sendRes.success) {
+        toast.success("Đã gửi tin nhắn thật đến khách trên Fanpage Facebook! 💬");
+      } else {
+        toast.error(`Gửi tin nhắn FB thất bại: ${sendRes.error}`);
+      }
+    }
+
+    // Nếu là hội thoại thật trên Zalo
+    if (selectedConv.channel === "zalo" && socialConfig.zalo.enabled && selectedConv.id.startsWith("ZL-")) {
+      const sendRes = await sendZaloMessage(
+        socialConfig.zalo.oaAccessToken,
+        selectedConv.customerHandle,
+        textToSend
+      );
+      if (sendRes.success) {
+        toast.success("Đã gửi tin nhắn thật đến khách trên Zalo OA! 💬");
+      } else {
+        toast.error(`Gửi tin nhắn Zalo thất bại: ${sendRes.error}`);
+      }
+    }
   };
 
   // Kích hoạt AI Bóc tách đơn hàng
@@ -161,7 +343,6 @@ function SocialChatPage() {
 
     const orderId = uid("ORD");
     const orderItems = extractedData.items.map((it) => {
-      // Thử tìm itemId khớp trong kho
       const matchInv = inventory.find((inv) => inv.name.toLowerCase() === it.name.toLowerCase());
       return {
         itemId: matchInv ? matchInv.id : uid("INV-CUST"),
@@ -184,7 +365,7 @@ function SocialChatPage() {
       discount: extractedData.discount || 0,
       paymentStatus: extractedData.paymentStatus,
       paymentMethod: extractedData.paymentMethod,
-      orderStatus: "PREPARING", // Bắt đầu cắm hoa sau khi chốt chat
+      orderStatus: "PREPARING",
       createdAt: todayStr(),
     };
 
@@ -245,20 +426,47 @@ function SocialChatPage() {
     toast.success("Đã mở cuộc trò chuyện mới.");
   };
 
+  const isConnectedFB = socialConfig.facebook.enabled && !!socialConfig.facebook.pageAccessToken;
+  const isConnectedZalo = socialConfig.zalo.enabled && !!socialConfig.zalo.oaAccessToken;
+  const isConnectedTikTok = socialConfig.tiktok.enabled && !!socialConfig.tiktok.accessToken;
+
   return (
     <div className="space-y-4">
       {/* Page Title & Actions */}
       <PageTitle
         title="Hộp thư Social & Lên đơn AI"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Sync Button */}
+            <button
+              type="button"
+              onClick={handleSyncRealData}
+              disabled={isSyncing}
+              className="btn btn-ghost border border-border/80 gap-1.5 text-xs h-9.5 px-3.5 cursor-pointer shadow-2xs hover:bg-muted"
+              title="Đồng bộ tin nhắn thật từ Fanpage Facebook, Zalo, TikTok"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+              <span>{isSyncing ? "Đang đồng bộ..." : "Đồng bộ tin thật"}</span>
+            </button>
+
+            {/* Config Button */}
+            <button
+              type="button"
+              onClick={() => setIsConfigModalOpen(true)}
+              className="btn btn-ghost border border-border/80 gap-1.5 text-xs h-9.5 px-3.5 cursor-pointer shadow-2xs hover:bg-muted"
+            >
+              <Settings2 className="h-3.5 w-3.5 text-primary" />
+              <span>Kết nối kênh ({[isConnectedFB, isConnectedZalo, isConnectedTikTok].filter(Boolean).length}/3)</span>
+            </button>
+
+            {/* New Chat Button */}
             <button
               type="button"
               onClick={() => setIsNewChatModalOpen(true)}
-              className="btn btn-primary gap-1.5 shadow-sm"
+              className="btn btn-primary gap-1.5 shadow-sm text-xs h-9.5 px-3.5"
             >
               <Plus className="h-4 w-4" />
-              <span>Thêm hội thoại mới</span>
+              <span>Thêm hội thoại</span>
             </button>
           </div>
         }
@@ -326,6 +534,7 @@ function SocialChatPage() {
               filteredConversations.map((conv) => {
                 const isSelected = conv.id === selectedConv?.id;
                 const meta = CHANNEL_META[conv.channel];
+                const isReal = conv.id.startsWith("FB-") || conv.id.startsWith("ZL-");
                 return (
                   <button
                     key={conv.id}
@@ -354,7 +563,14 @@ function SocialChatPage() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <p className="font-semibold text-xs text-foreground truncate">{conv.customerName}</p>
+                        <p className="font-semibold text-xs text-foreground truncate flex items-center gap-1">
+                          <span>{conv.customerName}</span>
+                          {isReal && (
+                            <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold">
+                              Thật
+                            </span>
+                          )}
+                        </p>
                         <span className="text-[10px] text-muted-foreground shrink-0">{conv.updatedAt}</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground/80 truncate mb-1">{conv.customerHandle}</p>
@@ -393,7 +609,14 @@ function SocialChatPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-sm text-foreground">{selectedConv.customerName}</h2>
+                    <h2 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                      <span>{selectedConv.customerName}</span>
+                      {(selectedConv.id.startsWith("FB-") || selectedConv.id.startsWith("ZL-")) && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500 text-white leading-none">
+                          Kênh Thật
+                        </span>
+                      )}
+                    </h2>
                     <span
                       className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase"
                       style={{ backgroundColor: CHANNEL_META[selectedConv.channel].color }}
@@ -524,6 +747,161 @@ function SocialChatPage() {
           </div>
         )}
       </div>
+
+      {/* ─── MODAL CÀI ĐẶT KẾT NỐI KÊNH THẬT ───────────────────────────────── */}
+      <Modal
+        open={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        title="⚙️ Kết Nối Kênh Mạng Xã Hội Thật"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Nhập Token của Fanpage Facebook, Zalo OA hoặc TikTok Shop để kết nối dữ liệu thật. Sau khi kết nối, hệ thống sẽ tự động đồng bộ tin nhắn khách hàng gửi đến các kênh về máy của bạn!
+          </p>
+
+          {/* Channel Tabs */}
+          <div className="flex border-b border-border/70 gap-2">
+            {(["facebook", "zalo", "tiktok"] as SocialChannel[]).map((ch) => {
+              const meta = CHANNEL_META[ch];
+              const active = activeTab === ch;
+              return (
+                <button
+                  key={ch}
+                  type="button"
+                  onClick={() => setActiveTab(ch)}
+                  className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+                    active
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: meta.color }} />
+                  {meta.name}
+                  {((ch === "facebook" && isConnectedFB) ||
+                    (ch === "zalo" && isConnectedZalo) ||
+                    (ch === "tiktok" && isConnectedTikTok)) && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* TAB 1: FACEBOOK & INSTAGRAM */}
+          {activeTab === "facebook" && (
+            <div className="space-y-3.5 pt-1">
+              <div className="rounded-2xl bg-blue-50/70 border border-blue-200/80 p-3 text-xs text-blue-900 dark:bg-blue-950/30 dark:border-blue-900/40 dark:text-blue-200 space-y-1">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <Share2 className="h-4 w-4 text-blue-600" /> Hướng dẫn lấy Page Access Token (3 bước):
+                </p>
+                <ol className="list-decimal list-inside space-y-0.5 opacity-90 pl-1 text-[11px]">
+                  <li>Truy cập <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noreferrer" className="underline font-bold">Graph API Explorer</a></li>
+                  <li>Trong mục <strong>User or Page</strong>, chọn Fanpage Tiệm Hoa của bạn</li>
+                  <li>Tích chọn quyền <code>pages_messaging</code>, <code>pages_read_engagement</code> rồi bấm <strong>Generate Access Token</strong> và dán vào bên dưới:</li>
+                </ol>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-foreground">Page Access Token (Facebook)</label>
+                <textarea
+                  rows={3}
+                  value={fbToken}
+                  onChange={(e) => setFbToken(e.target.value)}
+                  placeholder="EAA..."
+                  className="field text-xs font-mono py-2"
+                />
+              </div>
+
+              {fbPageName && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+                  <span>Fanpage: <strong>{fbPageName}</strong></span>
+                  <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">Đã xác thực</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveFacebook}
+                  disabled={verifying}
+                  className="btn btn-primary text-xs px-5 shadow-sm"
+                >
+                  {verifying ? "Đang xác thực..." : "Kiểm tra & Kết nối Fanpage"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: ZALO OA */}
+          {activeTab === "zalo" && (
+            <div className="space-y-3.5 pt-1">
+              <div className="rounded-2xl bg-sky-50/70 border border-sky-200/80 p-3 text-xs text-sky-900 dark:bg-sky-950/30 dark:border-sky-900/40 dark:text-sky-200 space-y-1">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <Share2 className="h-4 w-4 text-sky-600" /> Hướng dẫn lấy Token Zalo OA:
+                </p>
+                <p className="text-[11px] opacity-90">
+                  Truy cập <a href="https://developers.zalo.me/tools/explorer" target="_blank" rel="noreferrer" className="underline font-bold">Zalo Graph Explorer</a>, chọn Official Account tiệm hoa và lấy Access Token có quyền <code>oa.manage</code>.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-foreground">Zalo OA Access Token</label>
+                <textarea
+                  rows={3}
+                  value={zaloToken}
+                  onChange={(e) => setZaloToken(e.target.value)}
+                  placeholder="Dán Zalo Access Token..."
+                  className="field text-xs font-mono py-2"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveZalo}
+                  disabled={verifying}
+                  className="btn btn-primary text-xs px-5 shadow-sm"
+                >
+                  {verifying ? "Đang xác thực..." : "Kiểm tra & Kết nối Zalo OA"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: TIKTOK */}
+          {activeTab === "tiktok" && (
+            <div className="space-y-3.5 pt-1">
+              <div className="rounded-2xl bg-neutral-100 border border-neutral-200 p-3 text-xs text-neutral-800 dark:bg-neutral-900 dark:border-neutral-800 dark:text-neutral-200">
+                <p className="font-semibold">Kết nối TikTok Shop / TikTok Business API:</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Dán TikTok App Access Token để nhận tin nhắn khách hàng gửi qua TikTok Shop Chat.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-foreground">TikTok Access Token</label>
+                <input
+                  type="password"
+                  value={tiktokToken}
+                  onChange={(e) => setTiktokToken(e.target.value)}
+                  placeholder="TikTok Developer Token..."
+                  className="field text-xs font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveTikTok}
+                  className="btn btn-primary text-xs px-5 shadow-sm"
+                >
+                  Lưu cấu hình TikTok
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* ─── MODAL XÁC NHẬN ĐƠN HÀNG DO AI BÓC TÁCH ────────────────────────── */}
       {extractedData && (
