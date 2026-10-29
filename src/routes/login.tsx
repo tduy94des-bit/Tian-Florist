@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Flower2, Eye, EyeOff, LogIn, UserPlus, ShieldCheck, UserCheck } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
@@ -14,47 +14,31 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-type Mode = "login" | "register";
-
 function LoginPage() {
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("");
+  const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const fillCredentials = (userEmail: string, userPass: string) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-    setMode("login");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!account.trim() || !password) {
+      toast.error("Vui lòng nhập đầy đủ tài khoản và mật khẩu");
+      return;
+    }
     setLoading(true);
     try {
-      if (mode === "login") {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast.error(error.includes("Invalid login") ? "Email hoặc mật khẩu không đúng." : error);
-        } else {
-          toast.success("Đăng nhập thành công! Chào mừng trở lại 🌸");
-          // Check role if staff vs admin
-          if (email.toLowerCase().includes("staff")) {
-            navigate({ to: "/don-hang" });
-          } else {
-            navigate({ to: "/" });
-          }
-        }
+      const { error } = await signIn(account, password);
+      if (error) {
+        toast.error(error.includes("Invalid login") ? "Tài khoản hoặc mật khẩu không đúng." : error);
       } else {
-        const { error } = await signUp(email, password);
-        if (error) {
-          toast.error(error);
+        toast.success("Đăng nhập thành công! Chào mừng trở lại 🌸");
+        if (account.toLowerCase().includes("staff")) {
+          navigate({ to: "/don-hang" });
         } else {
-          toast.success("Đã tạo tài khoản thành công! Bạn có thể đăng nhập ngay.");
-          setMode("login");
+          navigate({ to: "/" });
         }
       }
     } finally {
@@ -73,98 +57,38 @@ function LoginPage() {
             className="mx-auto h-20 w-20 rounded-3xl object-cover shadow-md border border-border/40 mb-3"
           />
           <h1 className="font-display text-2xl font-bold text-foreground">Quản Lý Tiệm Hoa</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "login" ? "Đăng nhập hệ thống phân quyền" : "Tạo tài khoản nhân viên / quản lý"}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Đăng nhập hệ thống</p>
         </div>
 
-        {/* Quick Test Accounts Card */}
-        <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-xs">
-          <p className="font-semibold text-primary flex items-center gap-1.5 mb-2">
-            <span>⚡ Tài khoản thử nghiệm có sẵn:</span>
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => fillCredentials("admin@tiemhoa.vn", "AdminPassword123!")}
-              className="flex flex-col items-start p-2 rounded-xl bg-card border border-border hover:border-primary transition-all text-left shadow-2xs group"
-            >
-              <span className="font-bold text-foreground group-hover:text-primary flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Admin
-              </span>
-              <span className="text-[10px] text-muted-foreground mt-0.5">Toàn quyền tiệm hoa</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillCredentials("staff@tiemhoa.vn", "StaffPassword123!")}
-              className="flex flex-col items-start p-2 rounded-xl bg-card border border-border hover:border-sky-500 transition-all text-left shadow-2xs group"
-            >
-              <span className="font-bold text-foreground group-hover:text-sky-600 flex items-center gap-1">
-                <UserCheck className="h-3.5 w-3.5 text-sky-500" /> Staff
-              </span>
-              <span className="text-[10px] text-muted-foreground mt-0.5">Đơn hàng, Kho & Sổ quỹ</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Card */}
+        {/* Card Form */}
         <div className="card-soft bg-card p-6 rounded-3xl border border-border/70 shadow-lg">
-          {/* Mode Toggle */}
-          <div className="mb-5 flex rounded-2xl bg-muted p-1">
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold transition-all ${
-                mode === "login"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LogIn className="h-4 w-4" />
-              Đăng nhập
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("register")}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold transition-all ${
-                mode === "register"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <UserPlus className="h-4 w-4" />
-              Đăng ký
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-muted-foreground">Email</label>
+            {/* Account / Username / Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-foreground">Tài khoản</label>
               <input
-                type="email"
+                type="text"
                 required
                 className="field"
-                placeholder="example@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                placeholder="Nhập tên tài khoản hoặc email..."
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                autoComplete="username"
               />
             </div>
 
             {/* Password */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-muted-foreground">Mật khẩu</label>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-foreground">Mật khẩu</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   required
-                  minLength={6}
                   className="field pr-10"
-                  placeholder="Tối thiểu 6 ký tự"
+                  placeholder="Nhập mật khẩu..."
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -185,26 +109,15 @@ function LoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  {mode === "login" ? "Đang đăng nhập..." : "Đang tạo tài khoản..."}
+                  Đang đăng nhập...
                 </span>
-              ) : mode === "login" ? (
-                <>
-                  <LogIn className="h-4 w-4" /> Đăng nhập
-                </>
               ) : (
                 <>
-                  <UserPlus className="h-4 w-4" /> Tạo tài khoản
+                  <LogIn className="h-4 w-4" /> Đăng nhập
                 </>
               )}
             </button>
           </form>
-
-          {mode === "register" && (
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Tài khoản mới sẽ được tự động thiết lập với vai trò{" "}
-              <code className="rounded bg-muted px-1 font-mono text-[11px]">staff</code> (Nhân viên).
-            </p>
-          )}
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">

@@ -6,7 +6,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { supabase } from "./supabase";
+import { createClient } from "@supabase/supabase-js";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
 export type UserRole = "admin" | "staff";
@@ -19,8 +20,9 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (accountOrEmail: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  createStaffAccount: (accountOrEmail: string, password: string, name?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   switchRole: (newRole: UserRole) => Promise<void>;
   isAdmin: boolean;
@@ -32,61 +34,89 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function fetchRole(user: User): Promise<UserRole> {
   const userId = user.id;
   const email = (user.email || "").toLowerCase();
+  const fullName = ((user.user_metadata?.["full_name"] as string) || "").toLowerCase();
+  const metaRole = (user.user_metadata?.["role"] as string) || (user.app_metadata?.["role"] as string);
 
-  // 1. If email contains "admin", always grant admin role
-  if (email.includes("admin")) {
+  // Xóa các key override test cũ trong localStorage để không bao giờ bị kẹt quyền sai
+  if (typeof window !== "undefined") {
     try {
-      // Sync to database in background
-      supabase.from("profiles").update({ role: "admin" }).eq("id", userId).then();
+      localStorage.removeItem(`tiemhoa_role_${userId}`);
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("tiemhoa_role_")) {
+          localStorage.removeItem(key);
+        }
+      }
     } catch {
       // ignore
     }
+  }
+
+  // 1. Kiểm tra nếu là nhân viên (Staff):
+  // - Email chứa "staff"
+  // - Hoặc metadata role là "staff"
+  // - Hoặc tên có chữ "nhân viên" (như trong tài khoản mẫu: "Nhân Viên Tiệm Hoa")
+  // - Hoặc tài khoản nằm trong danh sách Staff đã cấp trong Cài đặt
+  let isCreatedStaff = false;
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("tiemhoa_staff_accounts");
+      if (raw) {
+        const staffList: Array<{ account: string }> = JSON.parse(raw);
+        isCreatedStaff = staffList.some(
+          (s) =>
+            s.account.toLowerCase() === email ||
+            s.account.toLowerCase() === email.replace("@tiemhoa.vn", "")
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (
+    email.includes("staff") ||
+    metaRole === "staff" ||
+    fullName.includes("nhân viên") ||
+    isCreatedStaff
+  ) {
+    return "staff";
+  }
+
+  // 2. Nếu email chứa "admin" hoặc metadata role là "admin" -> Chủ shop (Admin)
+  if (email.includes("admin") || metaRole === "admin") {
     return "admin";
   }
 
-  // 2. Check localStorage override if user toggled roles for testing
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem(`tiemhoa_role_${userId}`);
-    if (saved === "admin" || saved === "staff") {
-      return saved as UserRole;
-    }
-  }
-
-  // 3. Check profiles table in Supabase
-  try {
-    const { data: prof, error: profErr } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .maybeSingle();
-    if (!profErr && prof?.role) {
-      return prof.role as UserRole;
-    }
-  } catch {
-    // ignore
-  }
-
-  // 4. Check user_roles table
+  // 3. Kiểm tra bảng user_roles trong Supabase
   try {
     const { data: ur, error: urErr } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .maybeSingle();
-    if (!urErr && ur?.role) {
+    if (!urErr && ur?.role && (ur.role === "admin" || ur.role === "staff")) {
       return ur.role as UserRole;
     }
   } catch {
     // ignore
   }
 
-  // 5. Fallback to user metadata
-  const metaRole = (user.user_metadata?.["role"] as string) || (user.app_metadata?.["role"] as string);
-  if (metaRole === "admin" || metaRole === "staff") {
-    return metaRole as UserRole;
+  // 4. Kiểm tra bảng profiles trong Supabase
+  try {
+    const { data: prof, error: profErr } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profErr && prof?.role && (prof.role === "admin" || prof.role === "staff")) {
+      return prof.role as UserRole;
+    }
+  } catch {
+    // ignore
   }
 
-  return "staff"; // Default role
+  return "staff"; // Mặc định là nhân viên
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -123,8 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (accountOrEmail: string, password: string) => {
     setState((s) => ({ ...s, loading: true }));
+    const trimmed = accountOrEmail.trim();
+    const email = trimmed.includes("@") ? trimmed : `${trimmed.toLowerCase()}@tiemhoa.vn`;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setState((s) => ({ ...s, loading: false }));
@@ -160,6 +192,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   }, []);
 
+  const createStaffAccount = useCallback(async (accountOrEmail: string, password: string, name?: string) => {
+    const trimmed = accountOrEmail.trim();
+    const cleanEmail = trimmed.includes("@") ? trimmed : `${trimmed.toLowerCase()}@tiemhoa.vn`;
+    try {
+      // Dùng client riêng biệt không lưu session để Admin không bị out đăng nhập
+      const tempClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      });
+
+      const { data, error } = await tempClient.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            role: "staff",
+            full_name: name || trimmed,
+          },
+        },
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      if (data.user) {
+        try {
+          await supabase.from("profiles").upsert({
+            id: data.user.id,
+            role: "staff",
+          });
+        } catch {
+          // ignore
+        }
+      }
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || "Lỗi tạo tài khoản nhân viên" };
+    }
+  }, []);
+
   const switchRole = useCallback(async (newRole: UserRole) => {
     if (!state.user) return;
     if (typeof window !== "undefined") {
@@ -174,6 +250,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state.user]);
 
   const signOut = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("tiemhoa_role_")) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
     await supabase.auth.signOut();
     setState({ user: null, session: null, role: null, loading: false });
   }, []);
@@ -184,6 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...state,
         signIn,
         signUp,
+        createStaffAccount,
         signOut,
         switchRole,
         isAdmin: state.role === "admin",

@@ -6,6 +6,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { PaginationBar } from "@/components/PaginationBar";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/AuthGuard";
+import { DropdownSelect } from "@/components/DropdownSelect";
 import { useStore, vnd, uid, todayStr, INCOME_CATS, EXPENSE_CATS, type Trx } from "@/lib/store";
 
 export const Route = createFileRoute("/so-quy")({
@@ -168,27 +169,101 @@ function QuickEntry({ onClose }: { onClose: () => void }) {
   const cats = t.type === "INCOME" ? INCOME_CATS : EXPENSE_CATS;
   return (
     <Modal open onClose={onClose} title="Ghi thu chi nhanh">
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (t.amount > 0) { addTrx(t); onClose(); } }}>
-        <div className="grid grid-cols-2 gap-2">
-          {(["EXPENSE", "INCOME"] as const).map((k) => (
-            <button type="button" key={k} className={`btn ${t.type === k ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setT({ ...t, type: k, category: (k === "INCOME" ? INCOME_CATS : EXPENSE_CATS)[0]! })}>{k === "INCOME" ? "Thu" : "Chi"}</button>
-          ))}
+      <form className="space-y-3.5" onSubmit={(e) => { e.preventDefault(); if (t.amount > 0) { addTrx(t); onClose(); } }}>
+        {/* Toggle Chi / Thu - Sử dụng màu xanh brand cho trạng thái active */}
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-muted/80 border border-border">
+          {(["EXPENSE", "INCOME"] as const).map((k) => {
+            const isSelected = t.type === k;
+            return (
+              <button
+                type="button"
+                key={k}
+                className={`py-2 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground font-semibold"
+                }`}
+                onClick={() =>
+                  setT({
+                    ...t,
+                    type: k,
+                    category: (k === "INCOME" ? INCOME_CATS : EXPENSE_CATS)[0]!,
+                  })
+                }
+              >
+                {k === "INCOME" ? "Thu" : "Chi"}
+              </button>
+            );
+          })}
         </div>
-        <Label text="Số tiền (đ)"><input autoFocus required type="number" min={1} inputMode="numeric" className="field font-display text-2xl" value={t.amount || ""} onChange={(e) => setT({ ...t, amount: +e.target.value })} /></Label>
+
+        <Label text="Số tiền (đ)">
+          <input
+            autoFocus
+            required
+            type="number"
+            min={1}
+            inputMode="numeric"
+            className="field font-display text-2xl font-bold"
+            value={t.amount || ""}
+            onChange={(e) => setT({ ...t, amount: +e.target.value })}
+          />
+        </Label>
+
+        {/* Danh sách danh mục: Nút active (nhập hàng,...) sử dụng màu xanh brand */}
         <div className="flex flex-wrap gap-2">
-          {cats.map((c) => <button type="button" key={c} onClick={() => setT({ ...t, category: c })} className={`rounded-full px-3 py-1.5 text-sm ${t.category === c ? "bg-accent font-semibold text-accent-foreground" : "bg-muted"}`}>{c}</button>)}
+          {cats.map((c) => {
+            const isSelected = t.category === c;
+            return (
+              <button
+                type="button"
+                key={c}
+                onClick={() => setT({ ...t, category: c })}
+                className={`rounded-full px-3.5 py-1.5 text-xs transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                    : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 font-semibold"
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
         </div>
-        <Label text="Ghi chú"><input className="field" value={t.description} onChange={(e) => setT({ ...t, description: e.target.value })} /></Label>
+
+        <Label text="Ghi chú">
+          <input
+            className="field"
+            value={t.description}
+            onChange={(e) => setT({ ...t, description: e.target.value })}
+          />
+        </Label>
+
         <div className="grid grid-cols-2 gap-3">
-          <Label text="Ngày"><input type="date" className="field" value={t.date} onChange={(e) => setT({ ...t, date: e.target.value })} /></Label>
+          <Label text="Ngày">
+            <input
+              type="date"
+              className="field"
+              value={t.date}
+              onChange={(e) => setT({ ...t, date: e.target.value })}
+            />
+          </Label>
           <Label text="Nguồn tiền">
-            <select className="field" value={t.method} onChange={(e) => setT({ ...t, method: e.target.value as Trx["method"] })}>
-              <option value="CASH">Tiền mặt</option><option value="BANK">Ngân hàng</option>
-            </select>
+            <DropdownSelect
+              value={t.method}
+              onChange={(val) => setT({ ...t, method: val as Trx["method"] })}
+              options={[
+                { value: "CASH", label: "Tiền mặt" },
+                { value: "BANK", label: "Ngân hàng" },
+              ]}
+              title="Nguồn tiền"
+            />
           </Label>
         </div>
-        <button className="btn btn-primary w-full">Lưu</button>
+
+        <button className="btn btn-primary w-full shadow-xs cursor-pointer font-bold">
+          Lưu
+        </button>
       </form>
     </Modal>
   );

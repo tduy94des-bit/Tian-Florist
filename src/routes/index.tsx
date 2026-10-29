@@ -29,6 +29,7 @@ import {
 import { PageTitle } from "@/components/AppShell";
 import { OrderStatusBadge, PaymentStatusBadge, InventoryStatusBadge } from "@/components/StatusBadges";
 import { AuthGuard } from "@/components/AuthGuard";
+import { DropdownSelect } from "@/components/DropdownSelect";
 import {
   computeFinance,
   computeMonthFinance,
@@ -202,34 +203,30 @@ function Dashboard() {
         {viewMode === "COMPARE_MONTHS" && (
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Month A Selector */}
-            <select
-              value={monthA}
-              onChange={(e) => setMonthA(e.target.value)}
-              className="field py-1.5 px-3 text-sm font-medium flex-1 sm:flex-none sm:w-auto border-primary/40 focus:border-primary"
-            >
-              {availableMonths.map((ym) => (
-                <option key={ym} value={ym}>
-                  {formatMonthLabel(ym)}
-                </option>
-              ))}
-            </select>
+            <div className="flex-1 sm:flex-initial sm:w-48">
+              <DropdownSelect
+                value={monthA}
+                onChange={setMonthA}
+                options={availableMonths.map((ym) => ({ value: ym, label: formatMonthLabel(ym) }))}
+                title="Chọn Tháng A"
+                className="py-1.5 px-3 text-sm font-semibold border-primary/40"
+              />
+            </div>
 
             <div className="text-muted-foreground flex items-center justify-center shrink-0">
               <ArrowRightLeft className="h-4 w-4 text-primary" />
             </div>
 
             {/* Month B Selector */}
-            <select
-              value={monthB}
-              onChange={(e) => setMonthB(e.target.value)}
-              className="field py-1.5 px-3 text-sm font-medium flex-1 sm:flex-none sm:w-auto"
-            >
-              {availableMonths.map((ym) => (
-                <option key={ym} value={ym}>
-                  {formatMonthLabel(ym)}
-                </option>
-              ))}
-            </select>
+            <div className="flex-1 sm:flex-initial sm:w-48">
+              <DropdownSelect
+                value={monthB}
+                onChange={setMonthB}
+                options={availableMonths.map((ym) => ({ value: ym, label: formatMonthLabel(ym) }))}
+                title="Chọn Tháng B (Đối chứng)"
+                className="py-1.5 px-3 text-sm font-semibold"
+              />
+            </div>
           </div>
         )}
 
@@ -239,17 +236,15 @@ function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Chọn tháng báo cáo:
               </span>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="field py-1.5 px-3 text-sm font-semibold w-auto border-primary/50"
-              >
-                {availableMonths.map((ym) => (
-                  <option key={ym} value={ym}>
-                    {formatMonthLabel(ym)}
-                  </option>
-                ))}
-              </select>
+              <div className="w-48">
+                <DropdownSelect
+                  value={selectedMonth}
+                  onChange={setSelectedMonth}
+                  options={availableMonths.map((ym) => ({ value: ym, label: formatMonthLabel(ym) }))}
+                  title="Tháng báo cáo"
+                  className="py-1.5 px-3 text-sm font-semibold border-primary/50"
+                />
+              </div>
             </div>
             <button
               type="button"
@@ -667,26 +662,27 @@ function Dashboard() {
         </div>
       )}
 
-      {/* LOWER SECTION: DELIVERIES & INVENTORY */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <section className="card-soft p-5 bg-card lg:col-span-2">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+      {/* LOWER SECTION: DELIVERIES & INVENTORY (Đồng bộ tỉ lệ 3 : 2 thẳng hàng với biểu đồ phía trên) */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <section className="card-soft p-5 bg-card lg:col-span-3">
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-3">
             <h2 className="flex items-center gap-2 font-display text-lg font-bold text-foreground">
-              <Truck className="h-5 w-5 text-primary" />
-              Đơn cần giao hôm nay
+              <Truck className="h-5 w-5 text-primary shrink-0" />
+              <span>Đơn cần giao hôm nay</span>
             </h2>
-            <select
-              className="field w-auto py-1 px-3 text-xs"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as OrderStatus | "ALL")}
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              {Object.entries(STATUS_LABEL).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
+            <div className="w-auto ml-auto shrink-0">
+              <DropdownSelect
+                value={filter}
+                onChange={(val) => setFilter(val as OrderStatus | "ALL")}
+                options={[
+                  { value: "ALL", label: "Tất cả trạng thái" },
+                  ...Object.entries(STATUS_LABEL).map(([k, v]) => ({ value: k, label: v })),
+                ]}
+                variant="compact"
+                title="Lọc trạng thái đơn"
+                align="right"
+              />
+            </div>
           </div>
 
           {today.length === 0 ? (
@@ -746,7 +742,7 @@ function Dashboard() {
           </div>
         </section>
 
-        <section className="card-soft p-5 bg-card">
+        <section className="card-soft p-5 bg-card lg:col-span-2">
           <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
             <h2 className="flex items-center gap-2 font-display text-lg font-bold text-foreground">
               <AlertTriangle className="h-5 w-5 text-warning" />

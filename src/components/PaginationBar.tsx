@@ -28,9 +28,10 @@ export function PaginationBar({
   itemName = "mục",
   onPageChange,
 }: PaginationBarProps) {
-  if (totalItems === 0) return null;
+  // Chỉ hiển thị phân trang khi số lượng mục vượt quá 1 trang (đạt đủ lượt hiển thị trên 1 trang mới phân trang)
+  if (totalItems <= pageSize) return null;
 
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const totalPages = Math.ceil(totalItems / pageSize);
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const startIndex = (safePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
@@ -39,81 +40,77 @@ export function PaginationBar({
     <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-card border border-border/80 px-5 py-3 shadow-card">
       <p className="text-sm text-muted-foreground">
         Hiển thị <span className="font-semibold text-foreground">{startIndex + 1}</span>–<span className="font-semibold text-foreground">{endIndex}</span> trên tổng số <span className="font-semibold text-foreground">{totalItems}</span> {itemName}
-        {totalPages > 1 && (
-          <span className="ml-1.5 text-xs text-muted-foreground">
-            (Trang {safePage}/{totalPages})
-          </span>
-        )}
+        <span className="ml-1.5 text-xs text-muted-foreground">
+          (Trang {safePage}/{totalPages})
+        </span>
       </p>
 
-      {totalPages > 1 && (
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={safePage === 1}
-            onClick={() => onPageChange(1)}
-            className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
-            title="Trang đầu"
-            aria-label="Trang đầu"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            disabled={safePage === 1}
-            onClick={() => onPageChange(Math.max(1, safePage - 1))}
-            className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
-            title="Trang trước"
-            aria-label="Trang trước"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={safePage === 1}
+          onClick={() => onPageChange(1)}
+          className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          title="Trang đầu"
+          aria-label="Trang đầu"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          disabled={safePage === 1}
+          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          title="Trang trước"
+          aria-label="Trang trước"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
 
-          <div className="flex items-center gap-1 mx-1">
-            {getPageNumbers(safePage, totalPages).map((p, idx) =>
-              p === "..." ? (
-                <span key={`dots-${idx}`} className="px-1 text-muted-foreground text-xs">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => onPageChange(Number(p))}
-                  className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold transition-all ${
-                    safePage === p
-                      ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "btn-ghost text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {p}
-                </button>
-              )
-            )}
-          </div>
-
-          <button
-            type="button"
-            disabled={safePage === totalPages}
-            onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
-            className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
-            title="Trang sau"
-            aria-label="Trang sau"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            disabled={safePage === totalPages}
-            onClick={() => onPageChange(totalPages)}
-            className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
-            title="Trang cuối"
-            aria-label="Trang cuối"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-1 mx-1">
+          {getPageNumbers(safePage, totalPages).map((p, idx) =>
+            p === "..." ? (
+              <span key={`dots-${idx}`} className="px-1 text-muted-foreground text-xs">
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                onClick={() => onPageChange(Number(p))}
+                className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold transition-all cursor-pointer ${
+                  safePage === p
+                    ? "bg-primary text-primary-foreground shadow-2xs font-bold"
+                    : "btn-ghost text-muted-foreground hover:text-foreground hover:bg-muted font-medium"
+                }`}
+              >
+                {p}
+              </button>
+            )
+          )}
         </div>
-      )}
+
+        <button
+          type="button"
+          disabled={safePage === totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+          className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          title="Trang sau"
+          aria-label="Trang sau"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          disabled={safePage === totalPages}
+          onClick={() => onPageChange(totalPages)}
+          className="btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          title="Trang cuối"
+          aria-label="Trang cuối"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }

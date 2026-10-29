@@ -11,6 +11,7 @@ import { PaginationBar } from "@/components/PaginationBar";
 import { toast } from "sonner";
 import { OrderStatusBadge, PaymentStatusBadge, ORDER_STATUS_CONFIG } from "@/components/StatusBadges";
 import { AuthGuard } from "@/components/AuthGuard";
+import { DropdownSelect } from "@/components/DropdownSelect";
 import {
   useStore, vnd, uid, orderTotal, todayStr, STATUS_LABEL, PAY_LABEL, METHOD_LABEL, FLOWER_PRESET_IMAGES,
   type Order, type OrderStatus, type PaymentStatus, type PaymentMethod,
@@ -261,18 +262,17 @@ function OrdersPage() {
                   </div>
 
                   {/* Quick Status Dropdown */}
-                  <div className="relative">
-                    <select
-                      value={o.orderStatus}
-                      onChange={(e) => handleQuickStatusChange(o, e.target.value as OrderStatus)}
-                      className="h-8.5 rounded-xl border border-border bg-card pl-2.5 pr-7 text-xs font-semibold text-foreground shadow-2xs hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none"
-                    >
-                      {Object.entries(STATUS_LABEL).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
+                  <DropdownSelect
+                    value={o.orderStatus}
+                    onChange={(val) => handleQuickStatusChange(o, val as OrderStatus)}
+                    options={Object.entries(STATUS_LABEL).map(([val, label]) => ({
+                      value: val,
+                      label,
+                    }))}
+                    variant="compact"
+                    title="Trạng thái đơn hàng"
+                    align="right"
+                  />
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-0.5">
@@ -415,21 +415,16 @@ function OrdersPage() {
                 {/* Bottom Row: Quick Status Selector + Action Buttons */}
                 <div className="mt-1 pt-3 border-t border-border flex items-center justify-between gap-2">
                   {/* Quick Status Dropdown outside */}
-                  <div className="relative">
-                    <select
-                      value={o.orderStatus}
-                      onChange={(e) => handleQuickStatusChange(o, e.target.value as OrderStatus)}
-                      className="h-8.5 rounded-xl border border-border bg-card pl-3 pr-7 text-xs font-semibold text-foreground shadow-2xs hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none transition-all"
-                      title="Chuyển nhanh trạng thái đơn hàng"
-                    >
-                      {Object.entries(STATUS_LABEL).map(([val, label]) => (
-                        <option key={val} value={val}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
+                  <DropdownSelect
+                    value={o.orderStatus}
+                    onChange={(val) => handleQuickStatusChange(o, val as OrderStatus)}
+                    options={Object.entries(STATUS_LABEL).map(([val, label]) => ({
+                      value: val,
+                      label,
+                    }))}
+                    variant="compact"
+                    title="Trạng thái đơn hàng"
+                  />
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-0.5">
@@ -832,33 +827,52 @@ function OrderForm({ initial, onClose }: { initial: Order; onClose: () => void }
             );
           })}
 
-          <select className="field text-sm" value="" onChange={(e) => addItem(e.target.value)}>
-            <option value="">+ Thêm sản phẩm từ kho…</option>
-            {inventory.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.name} (Tồn kho: {i.quantity} {i.unit}) — Giá bán: {vnd(i.sellingPrice)}
-              </option>
-            ))}
-          </select>
+          <DropdownSelect
+            value=""
+            onChange={(val) => val && addItem(val)}
+            options={[
+              { value: "", label: "+ Thêm sản phẩm từ kho…" },
+              ...inventory.map((i) => ({
+                value: i.id,
+                label: `${i.name} — ${vnd(i.sellingPrice)}`,
+                badge: (
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    Kho: {i.quantity} {i.unit}
+                  </span>
+                ),
+              })),
+            ]}
+            title="Thêm sản phẩm từ kho"
+            placeholder="+ Thêm sản phẩm từ kho…"
+          />
         </div>
 
         {/* Pricing & Statuses */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Label text="Giảm giá (đ)"><input type="number" min={0} className="field" value={o.discount} onChange={(e) => set("discount", +e.target.value)} /></Label>
           <Label text="Trạng thái đơn">
-            <select className="field" value={o.orderStatus} onChange={(e) => set("orderStatus", e.target.value as OrderStatus)}>
-              {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            <DropdownSelect
+              value={o.orderStatus}
+              onChange={(val) => set("orderStatus", val as OrderStatus)}
+              options={Object.entries(STATUS_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+              title="Trạng thái đơn"
+            />
           </Label>
           <Label text="Thanh toán">
-            <select className="field" value={o.paymentStatus} onChange={(e) => set("paymentStatus", e.target.value as PaymentStatus)}>
-              {Object.entries(PAY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            <DropdownSelect
+              value={o.paymentStatus}
+              onChange={(val) => set("paymentStatus", val as PaymentStatus)}
+              options={Object.entries(PAY_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+              title="Trạng thái thanh toán"
+            />
           </Label>
           <Label text="Phương thức">
-            <select className="field" value={o.paymentMethod} onChange={(e) => set("paymentMethod", e.target.value as PaymentMethod)}>
-              {Object.entries(METHOD_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            <DropdownSelect
+              value={o.paymentMethod}
+              onChange={(val) => set("paymentMethod", val as PaymentMethod)}
+              options={Object.entries(METHOD_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+              title="Phương thức thanh toán"
+            />
           </Label>
         </div>
         <div className="flex items-center justify-between border-t border-border pt-4">

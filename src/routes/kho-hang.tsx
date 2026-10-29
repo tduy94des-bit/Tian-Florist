@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Minus, Pencil, Trash2, AlertTriangle, ShieldCheck, Flame, LayoutGrid, List } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Plus, Minus, Pencil, Trash2, AlertTriangle, ShieldCheck, Flame, LayoutGrid, List, SlidersHorizontal, Check } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Label, Modal, PageTitle } from "@/components/AppShell";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { PaginationBar } from "@/components/PaginationBar";
+import { DropdownSelect } from "@/components/DropdownSelect";
 import { toast } from "sonner";
 import { InventoryStatusBadge } from "@/components/StatusBadges";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -37,6 +38,19 @@ function InventoryPage() {
   const [step, setStep] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener for filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Reset về trang 1 khi đổi danh mục hoặc bộ lọc tồn kho
   useEffect(() => {
@@ -68,49 +82,120 @@ function InventoryPage() {
           <Plus className="h-4 w-4" />Thêm mặt hàng
         </button>} />
 
-      {/* 1. Category Tabs (Cuộn ngang độc lập) */}
-      <div className="mb-2 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        {(["ALL", ...INV_CATS] as const).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCat(c)}
-            className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
-              cat === c
-                ? "btn-primary shadow-sm"
-                : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
-            }`}
-          >
-            {c === "ALL" ? "Tất cả danh mục" : c}
-          </button>
-        ))}
-      </div>
-
-      {/* 2. Stock Alert Filters (Tách riêng biệt) */}
-      <div className="mb-4 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        <button
-          type="button"
-          onClick={() => setStockFilter(stockFilter === "LOW_ONLY" ? "ALL" : "LOW_ONLY")}
-          className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
-            stockFilter === "LOW_ONLY"
-              ? "btn-primary shadow-sm"
-              : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
-          }`}
-        >
-          Sắp hết ({lowCount})
-        </button>
-        {expiringCount > 0 && (
+      {/* Stock Filter Icon Button with Badge & Category Tabs (Cùng hàng đầu) */}
+      <div className="mb-4 flex items-center gap-2">
+        {/* Nút Icon Filter Cảnh báo có Badge theo ảnh mẫu - Nằm đầu tiên bên trái (dạng vuông bo góc squircle) */}
+        <div className="relative shrink-0" ref={filterRef}>
           <button
             type="button"
-            onClick={() => setStockFilter(stockFilter === "EXPIRING_ONLY" ? "ALL" : "EXPIRING_ONLY")}
-            className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
-              stockFilter === "EXPIRING_ONLY"
-                ? "btn-primary shadow-sm"
-                : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
-            }`}
+            onClick={() => setFilterOpen((v) => !v)}
+            title="Bộ lọc cảnh báo kho"
+            className="relative flex h-8.5 w-8.5 items-center justify-center rounded-[13px] border border-[#FA4A1E] bg-[#FFF5F2] text-[#FA4A1E] shadow-2xs hover:bg-[#FFE8E1] transition-all cursor-pointer"
           >
-            Cần dùng ngay ({expiringCount})
+            <SlidersHorizontal className="h-4 w-4 stroke-[2.2]" />
+            
+            {/* Badge số lượng màu đỏ cam ở góc trên bên phải giống hệt hình ảnh */}
+            {(lowCount + expiringCount) > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#FA4A1E] px-1 text-[10px] font-bold text-white shadow-xs leading-none">
+                {stockFilter === "LOW_ONLY" ? lowCount : stockFilter === "EXPIRING_ONLY" ? expiringCount : (lowCount + expiringCount)}
+              </span>
+            )}
           </button>
-        )}
+
+          {/* Dropdown Menu xổ xuống style chuẩn theo hình ảnh */}
+          {filterOpen && (
+            <div className="absolute left-0 top-full z-40 mt-1.5 w-52 rounded-[22px] border border-border/70 bg-card p-2 shadow-2xl backdrop-blur-md animate-in fade-in-50 zoom-in-95">
+              <div className="px-2.5 pt-1 pb-2 text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground border-b border-border/50 mb-1.5">
+                LỌC TRẠNG THÁI KHO
+              </div>
+
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStockFilter("ALL");
+                    setFilterOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-all text-left ${
+                    stockFilter === "ALL"
+                      ? "bg-[#EFF2EB] dark:bg-primary/15 text-foreground font-bold shadow-2xs"
+                      : "text-foreground font-semibold hover:bg-muted/70"
+                  }`}
+                >
+                  <span>Tất cả kho</span>
+                  {stockFilter === "ALL" && <Check className="h-4 w-4 text-[#4A5D44] stroke-[2.5]" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStockFilter("LOW_ONLY");
+                    setFilterOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-all text-left ${
+                    stockFilter === "LOW_ONLY"
+                      ? "bg-[#EFF2EB] dark:bg-primary/15 text-foreground font-bold shadow-2xs"
+                      : "text-foreground font-semibold hover:bg-muted/70"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span>Sắp hết</span>
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FEE8B0] text-[11px] font-bold text-[#8A5300]">
+                      {lowCount}
+                    </span>
+                    {stockFilter === "LOW_ONLY" && <Check className="h-4 w-4 text-[#4A5D44] stroke-[2.5]" />}
+                  </div>
+                </button>
+
+                {expiringCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStockFilter("EXPIRING_ONLY");
+                      setFilterOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-all text-left ${
+                      stockFilter === "EXPIRING_ONLY"
+                        ? "bg-[#EFF2EB] dark:bg-primary/15 text-foreground font-bold shadow-2xs"
+                        : "text-foreground font-semibold hover:bg-muted/70"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Flame className="h-4 w-4 text-rose-500 shrink-0" />
+                      <span>Cần dùng ngay</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FCD7D7] text-[11px] font-bold text-[#9E1B1B]">
+                        {expiringCount}
+                      </span>
+                      {stockFilter === "EXPIRING_ONLY" && <Check className="h-4 w-4 text-[#4A5D44] stroke-[2.5]" />}
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Vùng danh mục cuộn ngang */}
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
+          {(["ALL", ...INV_CATS] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setCat(c)}
+              className={`btn h-8 min-h-0 rounded-full px-3.5 text-xs font-semibold shrink-0 transition-all ${
+                cat === c
+                  ? "btn-primary shadow-sm"
+                  : "bg-white border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shadow-2xs"
+              }`}
+            >
+              {c === "ALL" ? "Tất cả danh mục" : c}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -356,9 +441,12 @@ function ItemForm({ initial, onClose }: { initial: InvItem; onClose: () => void 
       <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); saveItem(i); onClose(); }}>
         <Label text="Tên *"><input required className="field" value={i.name} onChange={(e) => set("name", e.target.value)} /></Label>
         <Label text="Danh mục">
-          <select className="field" value={i.category} onChange={(e) => set("category", e.target.value as InvCategory)}>
-            {INV_CATS.map((c) => <option key={c}>{c}</option>)}
-          </select>
+          <DropdownSelect
+            value={i.category}
+            onChange={(val) => set("category", val as InvCategory)}
+            options={INV_CATS.map((c) => ({ value: c, label: c }))}
+            title="Chọn danh mục"
+          />
         </Label>
         <Label text="Đơn vị"><input className="field" value={i.unit} onChange={(e) => set("unit", e.target.value)} /></Label>
         <Label text="Số lượng"><input type="number" min={0} className="field" value={i.quantity} onChange={(e) => set("quantity", +e.target.value)} /></Label>

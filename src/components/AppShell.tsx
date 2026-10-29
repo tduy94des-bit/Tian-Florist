@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Flower2, LayoutDashboard, ClipboardList, Package, Wallet, Settings, LogOut, User, RefreshCw } from "lucide-react";
+import { Flower2, LayoutDashboard, ClipboardList, Package, Wallet, Settings, LogOut, User } from "lucide-react";
 import type { ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth, type UserRole } from "@/lib/auth";
@@ -31,7 +31,7 @@ function useVisibleNav(role: UserRole | null) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { storeInfo, loading: storeLoading } = useStore();
-  const { user, role, loading: authLoading, signOut, switchRole } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isLoginPage = routerState.location.pathname === "/login";
@@ -46,12 +46,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     await signOut();
     toast.success("Đã đăng xuất thành công.");
     navigate({ to: "/login" });
-  };
-
-  const handleToggleRole = async () => {
-    const nextRole: UserRole = role === "admin" ? "staff" : "admin";
-    await switchRole(nextRole);
-    toast.info(`Đã chuyển vai trò sang: ${nextRole === "admin" ? "👑 Chủ shop (Admin)" : "🧑‍💼 Nhân viên (Staff)"}`);
   };
 
   // Show loading while auth OR store is loading (only on non-login pages)
@@ -96,35 +90,34 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2.5 sm:gap-3">
             <p className="hidden text-sm capitalize text-muted-foreground md:block">{date}</p>
 
-            {/* Role badge (Always visible + click to toggle for quick testing) */}
-            <button
-              type="button"
-              onClick={handleToggleRole}
-              title="Nhấp để đổi nhanh quyền giữa Admin và Staff để kiểm tra giao diện"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border transition-all cursor-pointer shadow-2xs hover:scale-105 ${
-                role === "admin"
-                  ? "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:border-amber-700 dark:text-amber-200"
-                  : "bg-sky-50 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:border-sky-700 dark:text-sky-200"
-              }`}
-            >
-              <span>{role === "admin" ? "👑 Chủ shop" : "🧑‍💼 Nhân viên"}</span>
-              <RefreshCw className="h-3 w-3 opacity-60 hover:opacity-100" />
-            </button>
+            {/* Nametag vai trò và tên người dùng (chỉ hiển thị, đã bỏ nút toggle chuyển quyền) */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold border shadow-2xs select-none ${
+                  role === "admin"
+                    ? "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:border-amber-700 dark:text-amber-200"
+                    : "bg-sky-50 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:border-sky-700 dark:text-sky-200"
+                }`}
+              >
+                {role === "admin" ? "👑 Chủ shop" : "🧑‍💼 Nhân viên"}
+              </span>
 
-            {/* User email */}
-            {user && (
-              <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
-                <User className="h-3.5 w-3.5" />
-                <span className="max-w-[140px] truncate">{user.email}</span>
-              </div>
-            )}
+              {user && (
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full border border-border/60">
+                  <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="max-w-[140px] truncate font-semibold text-foreground">
+                    {user.user_metadata?.full_name || user.email?.split("@")[0] || user.email}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Logout button */}
             {user && (
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="btn btn-ghost h-8 min-h-0 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                className="btn btn-ghost h-8 min-h-0 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 cursor-pointer"
                 title="Đăng xuất"
               >
                 <LogOut className="h-4 w-4" />
