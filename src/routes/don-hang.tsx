@@ -60,7 +60,7 @@ function formatDeliveryTime(str?: string): string {
   }
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 const blank = (): Order => ({
   id: uid("ORD"), customerName: "", customerPhone: "", recipientName: "", recipientPhone: "", deliveryAddress: "",

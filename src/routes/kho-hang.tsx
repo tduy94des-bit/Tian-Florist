@@ -26,7 +26,7 @@ export const Route = createFileRoute("/kho-hang")({
   ),
 });
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 type StockFilter = "ALL" | "LOW_ONLY" | "EXPIRING_ONLY";
 
 function InventoryPage() {
