@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const SUPABASE_URL = "https://vagmohpohbdhtcshushc.supabase.co";
-export const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhZ21vaHBvaGJkaHRjc2h1c2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMDE1MDksImV4cCI6MjEwODU3NzUwOX0.N7oLzBfRG2zfbUGUNjhjq762G0xPyuFtiIQVdjd0-40";
+// Keys are loaded from environment variables (never hardcode secrets in source code)
+// Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file (local)
+// and in Vercel → Project Settings → Environment Variables (production).
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 // Auth client with user session storage
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
