@@ -1,10 +1,26 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Keys are loaded from environment variables (never hardcode secrets in source code)
-// Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file (local)
-// and in Vercel → Project Settings → Environment Variables (production).
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// Keys are loaded from environment variables (with project safe fallbacks)
+// so the app works reliably in both client-side and TanStack Start SSR environments.
+const getEnv = (key: string, fallback: string): string => {
+  if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  if (typeof process !== "undefined" && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  return fallback;
+};
+
+export const SUPABASE_URL = getEnv(
+  "VITE_SUPABASE_URL",
+  "https://vagmohpohbdhtcshushc.supabase.co"
+);
+
+export const SUPABASE_ANON_KEY = getEnv(
+  "VITE_SUPABASE_ANON_KEY",
+  "sb_publishable_bIrEuLN7p3_4Ojv0mAbZyQ_bGlm-6AU"
+);
 
 // Auth client with user session storage
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
