@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Flower2, LayoutDashboard, ClipboardList, Package, Wallet, Settings, LogOut, User } from "lucide-react";
+import { Flower2, LayoutDashboard, ClipboardList, Package, Wallet, Settings, LogOut, User, MessageSquareShare } from "lucide-react";
 import type { ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth, type UserRole } from "@/lib/auth";
@@ -15,6 +15,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { to: "/", label: "Tổng quan", icon: LayoutDashboard, roles: ["admin"] },
+  { to: "/tin-nhan", label: "Tin nhắn", icon: MessageSquareShare },
   { to: "/don-hang", label: "Đơn hàng", icon: ClipboardList },
   { to: "/kho-hang", label: "Kho hàng", icon: Package },
   { to: "/so-quy", label: "Sổ quỹ", icon: Wallet },

@@ -15,6 +15,7 @@ import { Route as DonHangRouteImport } from './routes/don-hang'
 import { Route as KhoHangRouteImport } from './routes/kho-hang'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SoQuyRouteImport } from './routes/so-quy'
+import { Route as TinNhanRouteImport } from './routes/tin-nhan'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const SoQuyRoute = SoQuyRouteImport.update({
   path: '/so-quy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TinNhanRoute = TinNhanRouteImport.update({
+  id: '/tin-nhan',
+  path: '/tin-nhan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/kho-hang': typeof KhoHangRoute
   '/login': typeof LoginRoute
   '/so-quy': typeof SoQuyRoute
+  '/tin-nhan': typeof TinNhanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/kho-hang': typeof KhoHangRoute
   '/login': typeof LoginRoute
   '/so-quy': typeof SoQuyRoute
+  '/tin-nhan': typeof TinNhanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,27 @@ export interface FileRoutesById {
   '/kho-hang': typeof KhoHangRoute
   '/login': typeof LoginRoute
   '/so-quy': typeof SoQuyRoute
+  '/tin-nhan': typeof TinNhanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cai-dat' | '/don-hang' | '/kho-hang' | '/login' | '/so-quy'
+  fullPaths:
+    | '/'
+    | '/cai-dat'
+    | '/don-hang'
+    | '/kho-hang'
+    | '/login'
+    | '/so-quy'
+    | '/tin-nhan'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cai-dat' | '/don-hang' | '/kho-hang' | '/login' | '/so-quy'
+  to:
+    | '/'
+    | '/cai-dat'
+    | '/don-hang'
+    | '/kho-hang'
+    | '/login'
+    | '/so-quy'
+    | '/tin-nhan'
   id:
     | '__root__'
     | '/'
@@ -85,6 +108,7 @@ export interface FileRouteTypes {
     | '/kho-hang'
     | '/login'
     | '/so-quy'
+    | '/tin-nhan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +118,7 @@ export interface RootRouteChildren {
   KhoHangRoute: typeof KhoHangRoute
   LoginRoute: typeof LoginRoute
   SoQuyRoute: typeof SoQuyRoute
+  TinNhanRoute: typeof TinNhanRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SoQuyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tin-nhan': {
+      id: '/tin-nhan'
+      path: '/tin-nhan'
+      fullPath: '/tin-nhan'
+      preLoaderRoute: typeof TinNhanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   KhoHangRoute: KhoHangRoute,
   LoginRoute: LoginRoute,
   SoQuyRoute: SoQuyRoute,
+  TinNhanRoute: TinNhanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

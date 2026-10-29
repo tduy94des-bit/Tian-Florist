@@ -5,7 +5,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { UserPlus, UserCheck, ShieldCheck } from "lucide-react";
+import { UserPlus, UserCheck, ShieldCheck, Sparkles, Key } from "lucide-react";
 
 export const Route = createFileRoute("/cai-dat")({
   head: () => ({
@@ -34,6 +34,12 @@ function SettingsPage() {
   const { createStaffAccount } = useAuth();
   const [s, setS] = useState(storeInfo);
   const [saved, setSaved] = useState(false);
+
+  // Gemini AI Key state
+  const [geminiKey, setGeminiKey] = useState(() => {
+    return (typeof window !== "undefined" ? localStorage.getItem("tiemhoa_gemini_api_key") : "") || "";
+  });
+  const [savedGemini, setSavedGemini] = useState(false);
 
   // State cho việc cấp tài khoản staff
   const [staffName, setStaffName] = useState("");
@@ -290,6 +296,67 @@ function SettingsPage() {
             <div className="pt-3 border-t border-border/60 text-xs text-muted-foreground flex items-center justify-between">
               <span>Hệ thống phân quyền Tian Florist</span>
               <span className="font-semibold text-foreground">Admin</span>
+            </div>
+          </div>
+        </div>
+
+        {/* HÀNG 3: TRỢ LÝ AI GEMINI BÓC TÁCH ĐƠN HÀNG */}
+        <div className="card-soft p-5 sm:p-6 space-y-4">
+          <div className="border-b border-border/60 pb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base text-foreground">Trợ lý AI Gemini (Social Chat Extractor)</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Cấu hình khóa API Google Gemini để tự động đọc chat và lên đơn từ Facebook, Instagram, Zalo, TikTok
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
+              {geminiKey ? "✓ Đã kết nối API Key" : "⚡ Đang dùng Heuristic Parser (Sẵn sàng)"}
+            </span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-12 items-end">
+            <div className="sm:col-span-9 space-y-1.5">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Key className="h-3.5 w-3.5 text-primary" /> Gemini API Key (Tùy chọn)
+              </label>
+              <input
+                type="password"
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+                placeholder="Dán mã khóa AIzaSy... (Để trống nếu dùng bộ parser tích hợp sẵn)"
+                className="field text-xs font-mono"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Hệ thống luôn có sẵn bộ phân tích thông minh độc lập không lo gián đoạn. Bạn có thể lấy API Key miễn phí tại{" "}
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Google AI Studio
+                </a>.
+              </p>
+            </div>
+
+            <div className="sm:col-span-3">
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem("tiemhoa_gemini_api_key", geminiKey.trim());
+                  setSavedGemini(true);
+                  toast.success("Đã lưu khóa API Gemini thành công!");
+                  setTimeout(() => setSavedGemini(false), 2000);
+                }}
+                className="btn btn-primary text-xs w-full py-2.5 shadow-sm"
+              >
+                {savedGemini ? "✓ Đã lưu" : "Lưu khóa AI"}
+              </button>
             </div>
           </div>
         </div>
